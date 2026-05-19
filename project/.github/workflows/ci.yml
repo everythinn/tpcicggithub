@@ -1,0 +1,52 @@
+name: CI/CD Calculatrice
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Tests unitaires et fonctionnels
+    
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Installation des dépendances
+        run: npm install
+        working-directory: ./project
+
+      - name: Tests unitaires et fonctionnels
+        run: npm test
+        working-directory: ./project
+
+      - name: Rapport de couverture de tests
+        run: npm run test:coverage
+        working-directory: ./project
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    name: Déploiement FTP
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      - name: Déploiement FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: ${{ secrets.FTP_SERVER_DIR }}
