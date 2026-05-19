@@ -3,10 +3,43 @@ name: CI/CD Calculatrice
 on:
   push:
     branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
-  deploy:
+  test:
     runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+    
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Installation des dépendances
+        run: npm install
+
+      - name: Exécution des tests unitaires
+        run: npm run test:unit
+
+      - name: Exécution des tests fonctionnels
+        run: npm run test:functional
+
+      - name: Rapport de couverture de tests
+        run: npm run test:all -- --passWithNoTests
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     
     steps:
       - name: Checkout du code
